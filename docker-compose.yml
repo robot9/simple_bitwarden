@@ -1,0 +1,61 @@
+version: '3'
+services:
+  bitwarden:
+    # Standard Bitwarden is very resource-heavy and cannot run on micro cloud instances
+    # Bitwarden Rust is a Rust (mostly) feature-complete implementation of Bitwarden
+    # https://github.com/dani-garcia/bitwarden_rs
+    image: bitwardenrs/server:latest
+    restart: always
+    container_name: bitwarden
+    volumes:
+    - ${PWD}/bitwarden:/data
+    environment:
+    - LOG_FILE=/data/bitwarden.log
+    - WEBSOCKET_ENABLED=true            # required for websockets
+    - SHOW_PASSWORD_HINT=false
+    - DOMAIN=https://${DOMAIN}          # DOMAIN is set in .env but doesn't have protocol prefix
+    - SMTP_FROM_NAME=Bitwarden (${DOMAIN})
+    - IP_HEADER=X-Forwarded-For
+    - ADMIN_TOKEN                       # Value-less variables are set in .env
+    - SIGNUPS_ALLOWED
+    - SMTP_HOST
+    - SMTP_FROM
+    - SMTP_PORT
+    - SMTP_SSL
+    - SMTP_USERNAME
+    - SMTP_PASSWORD
+    dns:
+    - 8.8.8.8
+    - 8.8.4.4
+    
+  ddns:
+    # This provides a ddclient dynamic dns updating cron which is as simple as running it
+    # and editing the ddns/config/ddclient.conf file
+    # https://github.com/linuxserver/docker-ddclient
+    image: linuxserver/ddclient
+    restart: always
+    container_name: ddns
+    volumes:
+    - ${PWD}/ddns:/config
+    environment:
+    - PUID
+    - PGID
+    - TZ
+    dns:
+    - 8.8.8.8
+    - 8.8.4.4
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    expose:
+      - '80'
+      - '443'
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ${SSL_KEY_PATH}:/etc/nginx/${DOMAIN}/${DOMAIN}.key
+      - ${SSL_CERT_PATH}:/etc/nginx/${DOMAIN}/${DOMAIN}.crt
