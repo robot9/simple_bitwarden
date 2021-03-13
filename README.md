@@ -1,6 +1,10 @@
 # simple_bitwarden
 
-minimal set up to run a small bitwarden server in gcloud; try hide the bitwarden service under a sub-directory to avoid being exposed; only expose via https protocol
+minimal set up to run a small [bitwarden_rs](https://github.com/dani-garcia/bitwarden_rs) server in a small gcloud vm instance; 
+
+It hides the bitwarden service under a sub-directory to avoid being exposed; 
+
+The interface is only exposed via https protocol
 
 ## What's included:
 ### 1. bitwarden
@@ -32,25 +36,49 @@ test.freemyip.com
 ```
 
 4. Generate SSL certification for your `domain` to get `.key` and `.crt` file
-    1. (better) follow https://letsencrypt.org/getting-started/
+    1. (better) follow https://letsencrypt.org/getting-started/ or simplely follow the commands here as it works on cloud VM
+    
+    ```
+    # make sure 80 port is not occupied, 
+    # if there are docker instance running, use `docker-compose down` to stop all of them, 
+    # or `docker container stop <container_name>`
+    sudo yum install certbot
+    cd simple_bitwarden
+    # Replace test.freemyip.com with your domain
+    # Choose 1 to start local web service
+    sudo certbot certonly -d test.freemyip.com
+    ```
+    you shold see files generated like 
+    ```
+    Congratulations! Your certificate and chain have been saved at:
+    /etc/letsencrypt/live/test.freemyip.com/fullchain.pem
+    Your key file has been saved at:
+    /etc/letsencrypt/live/test.freemyip.com/privkey.pem
+    ```
+    now update the permission so that it can be accessed from nginx
+    ```
+    sudo chmod -R 755 /etc/letsencrypt/live/
+    sudo chmod -R 755 /etc/letsencrypt/archive/
+    ```
+    
     2. create openssl self signed certs
 5. Example `.env` config:
-
-```
-# Your bitwarden instance `https://{domain}/{sub_dir}`
-DOMAIN=test.freemyip.com
-SUB_DIR=bitwarden
-SSL_KEY_PATH=/path/to/key
-SSL_CERT_PATH=/path/to/cert
-TZ=America/Los_Angeles
-
-# Please follow the instruction in .env.template to set up bitwarden
-SIGNUPS_ALLOWED=false
-ADMIN_TOKEN=
-
-PUID=1000
-PGID=994
-```
+    
+    ```
+    # Your bitwarden instance `https://{domain}/{sub_dir}`
+    DOMAIN=test.freemyip.com
+    SUB_DIR=bitwarden
+    SSL_KEY_PATH=/etc/letsencrypt/live/test.freemyip.com/privkey.pem
+    SSL_CERT_PATH=/etc/letsencrypt/live/test.freemyip.com/fullchain.pem
+    TZ=America/Los_Angeles
+    
+    # Please follow the instruction in .env.template to set up bitwarden
+    SIGNUPS_ALLOWED=false
+    ADMIN_TOKEN=
+    
+    PUID=1000
+    PGID=994
+    ```
 6. run `docker-compose up -d`
 7. visit your bitwarden instance `https://{domain}/{sub_dir}`, e.g. `https://test.freemyip.com/bitwarden/`
 
