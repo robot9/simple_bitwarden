@@ -56,6 +56,11 @@ services:
       - '80'
       - '443'
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/nginx.conf:/etc/nginx/templates/default.conf.template
       - ${SSL_KEY_PATH}:/etc/nginx/${DOMAIN}/${DOMAIN}.key
       - ${SSL_CERT_PATH}:/etc/nginx/${DOMAIN}/${DOMAIN}.crt
+    environment:
+      - DOMAIN
+      - SUB_DIR
+      - SSL_KEY_PATH
+      - SSL_CERT_PATH
